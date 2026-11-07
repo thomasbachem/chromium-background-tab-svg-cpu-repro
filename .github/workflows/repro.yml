@@ -1,0 +1,52 @@
+name: Repro
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  repro:
+    name: ${{ matrix.os }} – ${{ matrix.hidden }} hidden, ${{ matrix.svgs }} SVGs${{ matrix.flags && ', --single-threaded-gc' || '' }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-26, hidden: 2, svgs: 30 }
+          - { os: macos-26, hidden: 3, svgs: 30 }
+          - { os: macos-26, hidden: 4, svgs: 30 }
+          - { os: macos-26, hidden: 6, svgs: 30 }
+          - { os: macos-26, hidden: 6, svgs: 5 }
+          - { os: macos-26, hidden: 6, svgs: 30, flags: --single-threaded-gc }
+          - { os: windows-latest, hidden: 3, svgs: 30 }
+          - { os: windows-latest, hidden: 5, svgs: 30 }
+          - { os: windows-latest, hidden: 8, svgs: 30 }
+          - { os: windows-latest, hidden: 8, svgs: 5 }
+          - { os: windows-latest, hidden: 8, svgs: 30, flags: --single-threaded-gc }
+          - { os: ubuntu-latest, hidden: 8, svgs: 30 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Run for 15 minutes
+        shell: bash
+        run: |
+          args=(--repro-hidden=${{ matrix.hidden }} --repro-svgs=${{ matrix.svgs }} --repro-seconds=900)
+          if [ -n "${{ matrix.flags }}" ]; then args+=(--repro-js-flags=${{ matrix.flags }}); fi
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a npx electron . --no-sandbox "${args[@]}"
+          else
+            npx electron . "${args[@]}"
+          fi
+      - name: Summary
+        if: always()
+        shell: bash
+        run: grep -h ' repro: ' results/*.log >> "$GITHUB_STEP_SUMMARY" || echo 'no verdict' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ strategy.job-index }}
+          path: results/
