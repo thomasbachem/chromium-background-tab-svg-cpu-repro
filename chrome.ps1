@@ -2,7 +2,7 @@
 # that Chrome's renderers' CPU every 10s and ends on a `repro:` verdict line. Other Chrome windows stay untouched
 param([int] $Hidden = 6, [int] $Svgs = 30, [int] $Seconds = 900, [string] $Switch = '', [string] $Out = 'results')
 $ErrorActionPreference = 'Stop'
-$chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+$chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if(!$chrome) { throw 'Chrome not found' }
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $label = 'chrome-h' + $Hidden + '-s' + $Svgs + $(if($Switch) { '-' + ($Switch -replace '[^A-Za-z0-9]+', '_') } else { '' })
