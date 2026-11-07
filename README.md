@@ -24,6 +24,8 @@ npx electron . --repro-hidden=3 --repro-svgs=30 --repro-seconds=600
 
 Every 10 seconds a line gives each tab's renderer CPU. The last line reads `repro: spin` or `repro: quiet`, judged on the last third of the samples. `results/` keeps the log and a JSON summary, including each tab's `document.hidden` and document count read at the end.
 
+In plain Chrome on Windows, `chrome.ps1 -Hidden 6 -Svgs 30` opens the page in 7 tabs, 6 of them in the background, and samples Chrome's renderers the same way. The page then kicks its own GC through `?kick=3`.
+
 The page builds about 17k nodes, 40k style rules and 70 MB of JS objects, and masks each of its 2,400 chips with one of the N SVG images (`data:` URIs). In the app it came from, serving the same SVGs by URL behaved the same.
 
 ## What happens

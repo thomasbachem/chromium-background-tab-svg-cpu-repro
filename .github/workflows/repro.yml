@@ -49,3 +49,31 @@ jobs:
         with:
           name: results-${{ strategy.job-index }}
           path: results/
+
+  chrome:
+    name: Chrome on windows-11-arm – ${{ matrix.hidden }} background tabs, ${{ matrix.svgs }} SVGs${{ matrix.switch && format(', --{0}', matrix.switch) || '' }}
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { hidden: 6, svgs: 30 }
+          - { hidden: 6, svgs: 8 }
+          - { hidden: 6, svgs: 30, switch: disable-features=UseEcoQoSForBackgroundProcess }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run for 15 minutes
+        shell: pwsh
+        run: ./chrome.ps1 -Hidden ${{ matrix.hidden }} -Svgs ${{ matrix.svgs }} -Seconds 900 -Switch '${{ matrix.switch }}'
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          grep -h ' repro: ' results/*.log >> "$GITHUB_STEP_SUMMARY" || echo 'no verdict' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chrome-results-${{ strategy.job-index }}
+          path: results/
+

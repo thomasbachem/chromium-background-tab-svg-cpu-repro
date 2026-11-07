@@ -50,5 +50,26 @@
 		document.body.getBoundingClientRect();
 		for(const chip of [...document.querySelectorAll('.chip')].slice(0, svgs)) getComputedStyle(chip, '::before').maskImage;
 		setTimeout(() => { document.title = 'ready'; }, 500);
+		// `?kick=<n>`: n rounds of garbage once hidden, 5s apart, so the GC starts without a driver – for plain Chrome
+		const kicks = Number(params.get('kick') ?? 0);
+		const kick = () => {
+			for(let round = 0; round < kicks; round++) {
+				setTimeout(() => {
+					const box = document.createElement('div');
+					for(let i = 0; i < 3000; i++) {
+						const node = document.createElement('div');
+						node.className = 'chip';
+						node.textContent = 'x' + i;
+						box.append(node);
+					}
+					document.body.append(box);
+					box.getBoundingClientRect();
+					box.remove();
+					window.scrap = Array.from({ length: 50000 }, (_, i) => ({ i }));
+				}, 5000 * (round + 1));
+			}
+		};
+		if(kicks && document.hidden) kick();
+		document.addEventListener('visibilitychange', () => document.hidden && kicks && kick(), { once: true });
 	});
 </script>
