@@ -15,6 +15,10 @@ npx electron . --repro-hidden=3 --repro-svgs=30 --repro-seconds=600
 | `--repro-svgs=<n>` | 30 | Distinct SVG images on each page |
 | `--repro-seconds=<n>` | 720 | How long to sample once the tabs are hidden |
 | `--repro-js-flags=<flags>` | – | V8 flags for the renderers |
+| `--repro-churn=<s>` | 20 | Every so often, builds and drops DOM + JS garbage in each hidden tab, as a live page's updates do, so its GC runs. 0 turns it off |
+| `--repro-cores=<n>` | all | Pins the app to the first N cores (Windows and Linux) |
+| `--repro-hogs=<n>` | 0 | Runs N busy processes beside it |
+| `--repro-hog-seconds=<s>` | whole run | Stops the hogs after this long |
 
 Every 10 seconds a line gives each tab's renderer CPU. The last line reads `repro: spin` or `repro: quiet`, judged on the last third of the samples. `results/` keeps the log and a JSON summary, including each tab's `document.hidden` and document count read at the end.
 
@@ -42,4 +46,4 @@ A DevTools client that emulates focus makes hidden pages visible and hides the b
 |:--|--:|--:|:--|:--|:--|
 | Windows 11, 2 vCPUs, Xeon Platinum 8573C (cloud VM, no GPU) | 3 | 30 | – | spin | 64%, 65%, 65% |
 
-The GitHub runs in this repo's Actions add macOS (3 M1 cores), Windows (4 cores) and Linux (4 cores).
+The GitHub runs in this repo's Actions add macOS (3 M1 cores), Windows and Linux (4 cores each, pinned to 2 in some jobs).

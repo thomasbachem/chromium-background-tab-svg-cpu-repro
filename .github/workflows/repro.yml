@@ -6,25 +6,29 @@ on:
 
 jobs:
   repro:
-    name: ${{ matrix.os }} – ${{ matrix.hidden }} hidden, ${{ matrix.svgs }} SVGs${{ matrix.flags && ', --single-threaded-gc' || '' }}
+    name: ${{ matrix.os }} – ${{ matrix.hidden }} hidden, ${{ matrix.svgs }} SVGs${{ matrix.cores && format(', {0} cores', matrix.cores) || '' }}${{ matrix.hogs && format(', {0} hogs', matrix.hogs) || '' }}${{ matrix.hogSeconds && format(' for {0}s', matrix.hogSeconds) || '' }}${{ matrix.flags && ', --single-threaded-gc' || '' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-26, hidden: 2, svgs: 30 }
-          - { os: macos-26, hidden: 3, svgs: 30 }
-          - { os: macos-26, hidden: 4, svgs: 30 }
-          - { os: macos-26, hidden: 6, svgs: 30 }
-          - { os: macos-26, hidden: 6, svgs: 5 }
-          - { os: macos-26, hidden: 6, svgs: 30, flags: --single-threaded-gc }
-          - { os: windows-latest, hidden: 3, svgs: 30 }
-          - { os: windows-latest, hidden: 5, svgs: 30 }
+          # Windows: 4 cores, pinned to 2 like the cloud VM, then unpinned
+          - { os: windows-latest, hidden: 3, svgs: 30, cores: 2 }
+          - { os: windows-latest, hidden: 2, svgs: 30, cores: 2 }
+          - { os: windows-latest, hidden: 3, svgs: 5, cores: 2 }
+          - { os: windows-latest, hidden: 3, svgs: 30, cores: 2, flags: --single-threaded-gc }
           - { os: windows-latest, hidden: 8, svgs: 30 }
-          - { os: windows-latest, hidden: 8, svgs: 5 }
-          - { os: windows-latest, hidden: 8, svgs: 30, flags: --single-threaded-gc }
-          - { os: ubuntu-latest, hidden: 8, svgs: 30 }
+          - { os: windows-latest, hidden: 8, svgs: 30, hogs: 4, hogSeconds: 180 }
+          # Linux: 4 cores, pinned to 2
+          - { os: ubuntu-latest, hidden: 3, svgs: 30, cores: 2 }
+          # macOS: 3 M1 cores and no CPU affinity, so busy processes take the cores away
+          - { os: macos-26, hidden: 3, svgs: 30 }
+          - { os: macos-26, hidden: 6, svgs: 30 }
+          - { os: macos-26, hidden: 6, svgs: 30, hogs: 3, hogSeconds: 180 }
+          - { os: macos-26, hidden: 6, svgs: 30, hogs: 2 }
+          - { os: macos-26, hidden: 6, svgs: 5, hogs: 2 }
+          - { os: macos-26, hidden: 6, svgs: 30, hogs: 2, flags: --single-threaded-gc }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,6 +40,9 @@ jobs:
         run: |
           args=(--repro-hidden=${{ matrix.hidden }} --repro-svgs=${{ matrix.svgs }} --repro-seconds=900)
           if [ -n "${{ matrix.flags }}" ]; then args+=(--repro-js-flags=${{ matrix.flags }}); fi
+          if [ -n "${{ matrix.cores }}" ]; then args+=(--repro-cores=${{ matrix.cores }}); fi
+          if [ -n "${{ matrix.hogs }}" ]; then args+=(--repro-hogs=${{ matrix.hogs }}); fi
+          if [ -n "${{ matrix.hogSeconds }}" ]; then args+=(--repro-hog-seconds=${{ matrix.hogSeconds }}); fi
           if [ "$RUNNER_OS" = Linux ]; then
             xvfb-run -a npx electron . --no-sandbox "${args[@]}"
           else
