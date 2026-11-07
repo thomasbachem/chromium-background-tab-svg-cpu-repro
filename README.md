@@ -1,5 +1,7 @@
 # SVG images keep hidden Chromium tabs busy
 
+Reported as [crbug.com/582923445](https://issues.chromium.org/issues/582923445).
+
 On Windows 11, a page that uses 10 or more distinct SVG images (8 stayed quiet) keeps every hidden tab's renderer main thread at 50–100% of a core for as long as the tabs stay hidden. Plain Chrome 156.0.8078.80 shows it too. Found in an Electron app (Electron 44.5.1 and 45.2.2, Chromium 156.0.8078.80, V8 15.6.75), reduced to this repro. Windows Server, macOS and Linux runners didn't show it.
 
 ## Run
