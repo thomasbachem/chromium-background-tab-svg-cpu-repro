@@ -13,14 +13,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Windows 11 client (arm64), 4 cores: background demotion, then the SVG threshold
           - { os: windows-11-arm, hidden: 6, svgs: 30 }
-          - { os: windows-11-arm, hidden: 6, svgs: 30, switch: disable-renderer-backgrounding }
-          - { os: windows-11-arm, hidden: 6, svgs: 30, switch: disable-features=UseEcoQoSForBackgroundProcess }
-          - { os: windows-11-arm, hidden: 4, svgs: 30, switch: disable-features=UseEcoQoSForBackgroundProcess }
-          - { os: windows-11-arm, hidden: 2, svgs: 30 }
           - { os: windows-11-arm, hidden: 6, svgs: 8 }
-          - { os: windows-11-arm, hidden: 6, svgs: 10 }
+          - { os: windows-11-arm, hidden: 6, svgs: 30, flags: --single-threaded-gc }
+          - { os: windows-11-arm, hidden: 6, svgs: 30, switch: disable-features=UseEcoQoSForBackgroundProcess }
+          - { os: windows-latest, hidden: 6, svgs: 30 }
+          - { os: macos-26, hidden: 6, svgs: 30 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
