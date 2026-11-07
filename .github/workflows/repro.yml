@@ -44,7 +44,8 @@ jobs:
       - name: Summary
         if: always()
         shell: bash
-        run: grep -h ' repro: ' results/*.log >> "$GITHUB_STEP_SUMMARY" || echo 'no verdict' >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          grep -h ' repro: ' results/*.log >> "$GITHUB_STEP_SUMMARY" || echo 'no verdict' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
