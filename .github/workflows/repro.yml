@@ -13,22 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Windows: 4 cores, pinned to 2 like the cloud VM, then unpinned
+          # Windows 11 client (arm64), 4 cores pinned to 2, then unpinned
+          - { os: windows-11-arm, hidden: 3, svgs: 30, cores: 2 }
+          - { os: windows-11-arm, hidden: 3, svgs: 5, cores: 2 }
+          - { os: windows-11-arm, hidden: 6, svgs: 30 }
+          # Windows Server 2025 (x64), pinned to 1 and 2 cores
+          - { os: windows-latest, hidden: 2, svgs: 30, cores: 1 }
           - { os: windows-latest, hidden: 3, svgs: 30, cores: 2 }
-          - { os: windows-latest, hidden: 2, svgs: 30, cores: 2 }
-          - { os: windows-latest, hidden: 3, svgs: 5, cores: 2 }
-          - { os: windows-latest, hidden: 3, svgs: 30, cores: 2, flags: --single-threaded-gc }
-          - { os: windows-latest, hidden: 8, svgs: 30 }
-          - { os: windows-latest, hidden: 8, svgs: 30, hogs: 4, hogSeconds: 180 }
-          # Linux: 4 cores, pinned to 2
-          - { os: ubuntu-latest, hidden: 3, svgs: 30, cores: 2 }
-          # macOS: 3 M1 cores and no CPU affinity, so busy processes take the cores away
-          - { os: macos-26, hidden: 3, svgs: 30 }
-          - { os: macos-26, hidden: 6, svgs: 30 }
-          - { os: macos-26, hidden: 6, svgs: 30, hogs: 3, hogSeconds: 180 }
-          - { os: macos-26, hidden: 6, svgs: 30, hogs: 2 }
-          - { os: macos-26, hidden: 6, svgs: 5, hogs: 2 }
-          - { os: macos-26, hidden: 6, svgs: 30, hogs: 2, flags: --single-threaded-gc }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

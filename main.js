@@ -14,12 +14,13 @@ const HIDDEN = Number(option('hidden', '3'));
 const SVGS = Number(option('svgs', '30'));
 const SECONDS = Number(option('seconds', '720'));
 const JS_FLAGS = option('js-flags', '');
-const CHURN_SECONDS = Number(option('churn', '20'));
+const CHURN_SECONDS = Number(option('churn', '0'));
+const KICKS = Number(option('kick', '3'));
 const CORES = Number(option('cores', '0'));
 const HOGS = Number(option('hogs', '0'));
 const HOG_SECONDS = Number(option('hog-seconds', '0'));
 const OUT = option('out', path.join(__dirname, 'results'));
-const LABEL = option('label', [process.platform, 'h' + HIDDEN, 's' + SVGS, ...(JS_FLAGS ? ['flags'] : []), ...(CORES ? ['c' + CORES] : []), ...(HOGS ? ['hogs' + HOGS + (HOG_SECONDS ? 'x' + HOG_SECONDS : '')] : [])].join('-'));
+const LABEL = option('label', [process.platform, 'h' + HIDDEN, 's' + SVGS, ...(JS_FLAGS ? ['flags'] : []), ...(CHURN_SECONDS ? ['churn' + CHURN_SECONDS] : []), ...(CORES ? ['c' + CORES] : []), ...(HOGS ? ['hogs' + HOGS + (HOG_SECONDS ? 'x' + HOG_SECONDS : '')] : [])].join('-'));
 const SPIN_PCT = 15;
 
 // Builds and drops DOM + JS garbage in a hidden tab, as a live page's updates do – so its GC runs
@@ -100,7 +101,7 @@ const readHeap = async (contents) => {
 
 app.whenReady().then(async () => {
 	log('Electron ' + process.versions.electron + ', Chrome ' + process.versions.chrome + ', V8 ' + process.versions.v8 + ' on ' + process.platform + ' ' + os.release() + ', ' + describeCpu());
-	log('hidden tabs ' + HIDDEN + ', distinct SVGs ' + SVGS + ', js-flags ' + (JS_FLAGS || 'none') + ', churn every ' + CHURN_SECONDS + 's, pinned to ' + (CORES || 'all') + ' cores, hogs ' + HOGS + (HOG_SECONDS ? ' for ' + HOG_SECONDS + 's' : '') + ', ' + SECONDS + 's');
+	log('hidden tabs ' + HIDDEN + ', distinct SVGs ' + SVGS + ', js-flags ' + (JS_FLAGS || 'none') + ', ' + KICKS + ' kicks, churn every ' + (CHURN_SECONDS || '–') + 's, pinned to ' + (CORES || 'all') + ' cores, hogs ' + HOGS + (HOG_SECONDS ? ' for ' + HOG_SECONDS + 's' : '') + ', ' + SECONDS + 's');
 	const win = new BrowserWindow({ width: 1200, height: 800, show: true, title: 'SVG GC repro' });
 	const [width, height] = win.getContentSize();
 	const tabs = [];
@@ -122,7 +123,10 @@ app.whenReady().then(async () => {
 	const stopHogs = () => hogs.splice(0).forEach(hog => hog.kill());
 	if(HOG_SECONDS) setTimeout(() => { stopHogs(); log('hogs stopped'); }, HOG_SECONDS * 1000);
 	const hiddenTabs = tabs.slice(1);
-	if(CHURN_SECONDS) setInterval(() => hiddenTabs.forEach(view => view.webContents.executeJavaScript(CHURN_SCRIPT).catch(() => { })), CHURN_SECONDS * 1000);
+	const churn = () => hiddenTabs.forEach(view => view.webContents.executeJavaScript(CHURN_SCRIPT).catch(() => { }));
+	// A few rounds of garbage right after hiding start the hidden tabs' GC – only a loop that feeds itself outlasts them
+	for(let i = 0; i < KICKS; i++) setTimeout(churn, 5000 * (i + 1));
+	if(CHURN_SECONDS) setInterval(churn, CHURN_SECONDS * 1000);
 
 	const oilpan = hiddenTabs.map(() => []);
 	const samples = [];
@@ -158,7 +162,7 @@ app.whenReady().then(async () => {
 	log('tabs at end: ' + reads.map((r, i) => (i === 0 ? 'visible ' : 'hidden ') + JSON.stringify(r)).join(' | '));
 	log('Oilpan MB per hidden tab over the run: ' + swing.join(', '));
 	const spinning = hiddenAvg.filter(p => p >= SPIN_PCT).length;
-	const result = { label: LABEL, platform: process.platform, logicalCores: os.cpus().length, pinnedCores: CORES, hogs: HOGS, hogSeconds: HOG_SECONDS, churnSeconds: CHURN_SECONDS, cpu: describeCpu(), hidden: HIDDEN, svgs: SVGS, jsFlags: JS_FLAGS, seconds: SECONDS, hiddenAvg, machineAvg, spinning, oilpanSwing: swing, tabs: reads };
+	const result = { label: LABEL, platform: process.platform, logicalCores: os.cpus().length, pinnedCores: CORES, hogs: HOGS, hogSeconds: HOG_SECONDS, kicks: KICKS, churnSeconds: CHURN_SECONDS, cpu: describeCpu(), hidden: HIDDEN, svgs: SVGS, jsFlags: JS_FLAGS, seconds: SECONDS, hiddenAvg, machineAvg, spinning, oilpanSwing: swing, tabs: reads };
 	fs.writeFileSync(path.join(OUT, LABEL + '.json'), JSON.stringify(result, null, '\t'));
 	log('repro: ' + (spinning ? 'spin' : 'quiet') + ' – ' + spinning + ' of ' + HIDDEN + ' hidden tabs at ' + SPIN_PCT + '%+ over the last third (' + hiddenAvg.join('/') + '%), machine ' + machineAvg + '% of ' + (os.cpus().length * 100));
 	app.quit();

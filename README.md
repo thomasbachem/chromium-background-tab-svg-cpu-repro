@@ -15,7 +15,8 @@ npx electron . --repro-hidden=3 --repro-svgs=30 --repro-seconds=600
 | `--repro-svgs=<n>` | 30 | Distinct SVG images on each page |
 | `--repro-seconds=<n>` | 720 | How long to sample once the tabs are hidden |
 | `--repro-js-flags=<flags>` | – | V8 flags for the renderers |
-| `--repro-churn=<s>` | 20 | Every so often, builds and drops DOM + JS garbage in each hidden tab, as a live page's updates do, so its GC runs. 0 turns it off |
+| `--repro-kick=<n>` | 3 | Rounds of DOM + JS garbage in each hidden tab right after hiding, 5s apart, so its GC starts |
+| `--repro-churn=<s>` | off | The same garbage every N seconds for the whole run. This spins even with few SVGs on a small machine, as each GC's sweep then spins |
 | `--repro-cores=<n>` | all | Pins the app to the first N cores (Windows and Linux) |
 | `--repro-hogs=<n>` | 0 | Runs N busy processes beside it |
 | `--repro-hog-seconds=<s>` | whole run | Stops the hogs after this long |
