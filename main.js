@@ -38,14 +38,13 @@ const CHURN_SCRIPT = `(() => {
 	return Array.from({ length: 50000 }, (_, i) => ({ i })).length;
 })()`;
 
-// Pins a process to the first N cores, its later children inheriting that
+// Pins a process to the first N cores, its later children inheriting that – Windows only, as
+// Linux forks renderers from a zygote started before this runs and macOS has no CPU affinity
 const pinCores = (pid, cores) => {
 	if(process.platform === 'win32') {
 		execFileSync('powershell', ['-NoProfile', '-Command', '(Get-Process -Id ' + pid + ').ProcessorAffinity = ' + (2 ** cores - 1)]);
-	} else if(process.platform === 'linux') {
-		execFileSync('taskset', ['-a', '-cp', '0-' + (cores - 1), String(pid)], { stdio: 'ignore' });
 	} else {
-		throw new Error('--repro-cores needs Windows or Linux, as macOS has no CPU affinity');
+		throw new Error('--repro-cores needs Windows');
 	}
 };
 
