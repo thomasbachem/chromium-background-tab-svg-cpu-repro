@@ -1,5 +1,5 @@
 {
-  "name": "svg-image-gc-loop-repro",
+  "name": "chromium-background-tab-svg-cpu-repro",
   "version": "1.0.0",
   "private": true,
   "description": "Hidden tabs keep a CPU core busy once a page uses more than ~10 distinct SVG images",
