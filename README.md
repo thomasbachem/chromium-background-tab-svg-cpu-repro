@@ -1,6 +1,6 @@
 # SVG images keep hidden Chromium tabs busy
 
-On Windows 11, a page that uses 10 or more distinct SVG images (8 stayed quiet) keeps every hidden tab's renderer main thread at 50–100% of a core for as long as the tabs stay hidden. Found in an Electron app (Electron 44.5.1 and 45.2.2, Chromium 156.0.8078.80, V8 15.6.75), reduced to this repro. Windows Server, macOS and Linux runners didn't show it.
+On Windows 11, a page that uses 10 or more distinct SVG images (8 stayed quiet) keeps every hidden tab's renderer main thread at 50–100% of a core for as long as the tabs stay hidden. Plain Chrome 156.0.8078.80 shows it too. Found in an Electron app (Electron 44.5.1 and 45.2.2, Chromium 156.0.8078.80, V8 15.6.75), reduced to this repro. Windows Server, macOS and Linux runners didn't show it.
 
 ## Run
 
@@ -52,7 +52,7 @@ Each run hides the tabs, kicks their GC 3 times, then samples for 10–15 minute
 
 | Machine | Hidden | SVGs | Extra | Hidden tabs' CPU, last third |
 |:--|--:|--:|:--|:--|
-| Windows 11 arm64, 4 cores (`windows-11-arm`) | 6 | 30 | – | **65–67% each** (2 runs) |
+| Windows 11 arm64, 4 cores (`windows-11-arm`) | 6 | 30 | – | **65–67% each** (4 runs) |
 | | 4 | 30 | – | **99% each** |
 | | 8 | 30 | – | **49–50% each** |
 | | 6 | 10 | – | **66% each** |
@@ -64,6 +64,9 @@ Each run hides the tabs, kicks their GC 3 times, then samples for 10–15 minute
 | | 6 / 4 | 30 | `--disable-features=UseEcoQoSForBackgroundProcess` | 0% |
 | Windows 11 x64, 2 vCPUs (cloud PC, no GPU) | 3 | 30 | – | **64% each** |
 | | 3 | 5 | – | 0% |
+| Chrome 156 on Windows 11 arm64, 4 cores (`chrome.ps1`) | 6 | 30 | – | **6 renderers at 25–95%** |
+| | 6 | 8 | – | 0%, after spinning briefly |
+| | 6 | 30 | `--disable-features=UseEcoQoSForBackgroundProcess` | 0% |
 | Windows Server 2025 x64, 4 cores (`windows-latest`) | 8 | 30 | – | 0% |
 | macOS 26, 3 M1 cores, virtual (`macos-26`) | 6, 9 | 30 | – | 0% |
 | Linux, 4 cores (`ubuntu-latest`) | 8 | 30 | – | 0% |
