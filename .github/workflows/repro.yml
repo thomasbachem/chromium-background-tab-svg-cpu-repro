@@ -6,24 +6,21 @@ on:
 
 jobs:
   repro:
-    name: ${{ matrix.os }} – ${{ matrix.hidden }} hidden, ${{ matrix.svgs }} SVGs${{ matrix.cores && format(', {0} cores', matrix.cores) || '' }}${{ matrix.hogs && format(', {0} hogs', matrix.hogs) || '' }}${{ matrix.hogSeconds && format(' for {0}s', matrix.hogSeconds) || '' }}${{ matrix.flags && ', --single-threaded-gc' || '' }}
+    name: ${{ matrix.os }} – ${{ matrix.hidden }} hidden, ${{ matrix.svgs }} SVGs${{ matrix.switch && format(', --{0}', matrix.switch) || '' }}${{ matrix.cores && format(', {0} cores', matrix.cores) || '' }}${{ matrix.hogs && format(', {0} hogs', matrix.hogs) || '' }}${{ matrix.hogSeconds && format(' for {0}s', matrix.hogSeconds) || '' }}${{ matrix.flags && ', --single-threaded-gc' || '' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Windows 11 client (arm64), 4 cores
-          - { os: windows-11-arm, hidden: 4, svgs: 30 }
-          - { os: windows-11-arm, hidden: 8, svgs: 30 }
-          - { os: windows-11-arm, hidden: 6, svgs: 5 }
-          - { os: windows-11-arm, hidden: 6, svgs: 30, flags: --single-threaded-gc }
-          # Windows Server 2025 (x64), 4 cores
-          - { os: windows-latest, hidden: 8, svgs: 30 }
-          # macOS (3 M1 cores) and Linux (4 cores)
-          - { os: macos-26, hidden: 6, svgs: 30 }
-          - { os: macos-26, hidden: 9, svgs: 30 }
-          - { os: ubuntu-latest, hidden: 8, svgs: 30 }
+          # Windows 11 client (arm64), 4 cores: background demotion, then the SVG threshold
+          - { os: windows-11-arm, hidden: 6, svgs: 30 }
+          - { os: windows-11-arm, hidden: 6, svgs: 30, switch: disable-renderer-backgrounding }
+          - { os: windows-11-arm, hidden: 6, svgs: 30, switch: disable-features=UseEcoQoSForBackgroundProcess }
+          - { os: windows-11-arm, hidden: 4, svgs: 30, switch: disable-features=UseEcoQoSForBackgroundProcess }
+          - { os: windows-11-arm, hidden: 2, svgs: 30 }
+          - { os: windows-11-arm, hidden: 6, svgs: 8 }
+          - { os: windows-11-arm, hidden: 6, svgs: 10 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,6 +33,7 @@ jobs:
           args=(--repro-hidden=${{ matrix.hidden }} --repro-svgs=${{ matrix.svgs }} --repro-seconds=900)
           if [ -n "${{ matrix.flags }}" ]; then args+=(--repro-js-flags=${{ matrix.flags }}); fi
           if [ -n "${{ matrix.cores }}" ]; then args+=(--repro-cores=${{ matrix.cores }}); fi
+          if [ -n "${{ matrix.switch }}" ]; then args+=(--repro-switch=${{ matrix.switch }}); fi
           if [ -n "${{ matrix.hogs }}" ]; then args+=(--repro-hogs=${{ matrix.hogs }}); fi
           if [ -n "${{ matrix.hogSeconds }}" ]; then args+=(--repro-hog-seconds=${{ matrix.hogSeconds }}); fi
           if [ "$RUNNER_OS" = Linux ]; then

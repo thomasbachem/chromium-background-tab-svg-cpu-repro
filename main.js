@@ -19,8 +19,10 @@ const KICKS = Number(option('kick', '3'));
 const CORES = Number(option('cores', '0'));
 const HOGS = Number(option('hogs', '0'));
 const HOG_SECONDS = Number(option('hog-seconds', '0'));
+// Chromium switches, each `--repro-switch=<name>[=<value>]`
+const SWITCHES = process.argv.filter(a => a.startsWith('--repro-switch=')).map(a => a.slice('--repro-switch='.length));
 const OUT = option('out', path.join(__dirname, 'results'));
-const LABEL = option('label', [process.platform, 'h' + HIDDEN, 's' + SVGS, ...(JS_FLAGS ? ['flags'] : []), ...(CHURN_SECONDS ? ['churn' + CHURN_SECONDS] : []), ...(CORES ? ['c' + CORES] : []), ...(HOGS ? ['hogs' + HOGS + (HOG_SECONDS ? 'x' + HOG_SECONDS : '')] : [])].join('-'));
+const LABEL = option('label', [process.platform, 'h' + HIDDEN, 's' + SVGS, ...(JS_FLAGS ? ['flags'] : []), ...SWITCHES.map(s => s.replace(/[^A-Za-z0-9]+/g, '_')), ...(CHURN_SECONDS ? ['churn' + CHURN_SECONDS] : []), ...(CORES ? ['c' + CORES] : []), ...(HOGS ? ['hogs' + HOGS + (HOG_SECONDS ? 'x' + HOG_SECONDS : '')] : [])].join('-'));
 const SPIN_PCT = 15;
 
 // Builds and drops DOM + JS garbage in a hidden tab, as a live page's updates do – so its GC runs
@@ -58,6 +60,10 @@ const readCores = (pid) => {
 
 if(CORES) pinCores(process.pid, CORES);
 if(JS_FLAGS) app.commandLine.appendSwitch('js-flags', JS_FLAGS);
+for(const entry of SWITCHES) {
+	const [name, ...value] = entry.split('=');
+	app.commandLine.appendSwitch(name, value.join('='));
+}
 app.setPath('userData', path.join(os.tmpdir(), 'svg-gc-repro-' + process.pid));
 fs.mkdirSync(OUT, { recursive: true });
 const logFile = path.join(OUT, LABEL + '.log');
@@ -100,7 +106,7 @@ const readHeap = async (contents) => {
 
 app.whenReady().then(async () => {
 	log('Electron ' + process.versions.electron + ', Chrome ' + process.versions.chrome + ', V8 ' + process.versions.v8 + ' on ' + process.platform + ' ' + os.release() + ', ' + describeCpu());
-	log('hidden tabs ' + HIDDEN + ', distinct SVGs ' + SVGS + ', js-flags ' + (JS_FLAGS || 'none') + ', ' + KICKS + ' kicks, churn every ' + (CHURN_SECONDS || '–') + 's, pinned to ' + (CORES || 'all') + ' cores, hogs ' + HOGS + (HOG_SECONDS ? ' for ' + HOG_SECONDS + 's' : '') + ', ' + SECONDS + 's');
+	log('hidden tabs ' + HIDDEN + ', distinct SVGs ' + SVGS + ', js-flags ' + (JS_FLAGS || 'none') + ', switches ' + (SWITCHES.join(' ') || 'none') + ', ' + KICKS + ' kicks, churn every ' + (CHURN_SECONDS || '–') + 's, pinned to ' + (CORES || 'all') + ' cores, hogs ' + HOGS + (HOG_SECONDS ? ' for ' + HOG_SECONDS + 's' : '') + ', ' + SECONDS + 's');
 	const win = new BrowserWindow({ width: 1200, height: 800, show: true, title: 'SVG GC repro' });
 	const [width, height] = win.getContentSize();
 	const tabs = [];
@@ -161,7 +167,7 @@ app.whenReady().then(async () => {
 	log('tabs at end: ' + reads.map((r, i) => (i === 0 ? 'visible ' : 'hidden ') + JSON.stringify(r)).join(' | '));
 	log('Oilpan MB per hidden tab over the run: ' + swing.join(', '));
 	const spinning = hiddenAvg.filter(p => p >= SPIN_PCT).length;
-	const result = { label: LABEL, platform: process.platform, logicalCores: os.cpus().length, pinnedCores: CORES, hogs: HOGS, hogSeconds: HOG_SECONDS, kicks: KICKS, churnSeconds: CHURN_SECONDS, cpu: describeCpu(), hidden: HIDDEN, svgs: SVGS, jsFlags: JS_FLAGS, seconds: SECONDS, hiddenAvg, machineAvg, spinning, oilpanSwing: swing, tabs: reads };
+	const result = { label: LABEL, platform: process.platform, logicalCores: os.cpus().length, pinnedCores: CORES, hogs: HOGS, hogSeconds: HOG_SECONDS, kicks: KICKS, churnSeconds: CHURN_SECONDS, cpu: describeCpu(), hidden: HIDDEN, svgs: SVGS, jsFlags: JS_FLAGS, switches: SWITCHES, seconds: SECONDS, hiddenAvg, machineAvg, spinning, oilpanSwing: swing, tabs: reads };
 	fs.writeFileSync(path.join(OUT, LABEL + '.json'), JSON.stringify(result, null, '\t'));
 	log('repro: ' + (spinning ? 'spin' : 'quiet') + ' – ' + spinning + ' of ' + HIDDEN + ' hidden tabs at ' + SPIN_PCT + '%+ over the last third (' + hiddenAvg.join('/') + '%), machine ' + machineAvg + '% of ' + (os.cpus().length * 100));
 	app.quit();
