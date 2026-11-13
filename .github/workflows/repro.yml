@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run for 15 minutes
         shell: pwsh
-        run: ./chrome.ps1 -Hidden ${{ matrix.hidden }} -Svgs ${{ matrix.svgs }} -Seconds 900 -Switch '${{ matrix.switch }}'
+        run: ./chrome.ps1 -Hidden ${{ matrix.hidden }} -Svgs ${{ matrix.svgs }} -Seconds 900 -Switch '${{ matrix.switch }}' -Variations
       - name: Summary
         if: always()
         shell: bash
