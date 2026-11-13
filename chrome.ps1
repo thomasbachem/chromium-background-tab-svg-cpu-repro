@@ -74,9 +74,9 @@ if($Variations) {
 		Set-Content -Path (Join-Path $Out ($label + '.version.txt')) -Value $text -Encoding utf8
 		Write-Log ('saved chrome://version/?show-variations-cmd to ' + $label + '.version.txt')
 	} catch {
-		Write-Log ('chrome://version not saved – ' + $_)
+		Write-Log ('chrome://version not saved - ' + $_)
 	}
 }
 Get-CimInstance Win32_Process -Filter ("ParentProcessId=" + $browser.Id) | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Stop-Process -Id $browser.Id -Force -ErrorAction SilentlyContinue
-Write-Log ('repro: ' + $(if($spinning) { 'spin' } else { 'quiet' }) + ' – ' + $spinning + ' renderers at 15%+ over the last third (' + ($averages -join '/') + '%, busiest first)')
+Write-Log ('repro: ' + $(if($spinning) { 'spin' } else { 'quiet' }) + ' - ' + $spinning + ' renderers at 15%+ over the last third (' + ($averages -join '/') + '%, busiest first)')
